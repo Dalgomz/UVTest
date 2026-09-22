@@ -1,0 +1,14 @@
+{
+  "last_release": "2026-08-19.0",
+  "last_run": "2026-09-22T02:47:13.849931+00:00",
+  "theme": "base",
+  "type": "land_use",
+  "bbox": {
+    "xmin": 9.194334,
+    "ymin": 45.471917,
+    "xmax": 9.218495,
+    "ymax": 45.487082
+  },
+  "backend": "geojson",
+  "output": "/workspaces/UVTest/scripts/milano_infrastructure.geojson"
+}
