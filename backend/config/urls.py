@@ -15,9 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
 from django.urls import path
+from kpis import views as kpi_views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("health/", kpi_views.health, name="health"),
+    path("kpi/", kpi_views.kpi_from_polygon, name="kpi_from_polygon"),
 ]
