@@ -47,14 +47,14 @@ type MapViewerProps = {
   center?: Coords;
   zoom?: number;
   bounds?: Bbox;         //  — overrides center/zoom, fits the map to this bbox
-  staticMap: boolean; // true = no pan/zoom/rotate, no controls (good for a fixed-bbox render)
-  lockToBounds: boolean, // true = stay interactive, but pan/zoom-out is clamped
+  staticMap?: boolean; // true = no pan/zoom/rotate, no controls (good for a fixed-bbox render)
+  lockToBounds?: boolean, // true = stay interactive, but pan/zoom-out is clamped
   boundsPadding?: number, // e.g. 0.2 = let the user pan 20% of the bbox size beyond it, dimmed
   styleSpec?: StyleSpecification; // pass a URL string to use a hosted vector style instead
   markers?: MapMarker[];     // [{ lngLat: [lng, lat], label?: string, color?: string }]
   onMapClick?: (lngLat: LngLat) => void;
   className?: string;
-  selectionCallback: (selectionArea?: Coords[]) => void;
+  selectionCallback: (selectionArea: Coords[]) => void;
 };
 
 

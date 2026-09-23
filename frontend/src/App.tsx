@@ -32,7 +32,7 @@ function App() {
           bounds={[9.194334, 45.471917, 9.218495, 45.487082]}
           boundsPadding={0.25}
           lockToBounds
-          onMapClick={(longLat: Coords) => console.log(longLat)}
+          onMapClick={(longLat) => console.log(longLat)}
           selectionCallback={updateSelection}
         />
       </section>
