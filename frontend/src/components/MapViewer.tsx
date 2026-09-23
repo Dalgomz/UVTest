@@ -1,31 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Map as MapObject, NavigationControl, Marker, Popup } from 'maplibre-gl';
-import type { StyleSpecification, LngLat, MapMouseEvent } from 'maplibre-gl';
-import type { Feature, Polygon } from 'geojson';
+import type { StyleSpecification, LngLat, MapMouseEvent, GeoJSONSource } from 'maplibre-gl';
+import type { Feature, FeatureCollection, LineString, Polygon, Point } from 'geojson';
 
 import { registerPmtilesProtocol } from '@/config/pmTilesProtocol';
 import { OSM_RASTER_STYLE } from '@/config/mapStyleConf';
 
-/**
- * MapView
- * Renders a MapLibre GL map inside a React component.
- *
- * Usage:
- *   <MapView center={[-73.99, 40.73]} zoom={11} />
- *
- * Notes:
- * - Defaults to real OpenStreetMap raster tiles (no API key needed). This is
- *   fine for development but has usage limits — for production, swap
- *   `styleSpec` for a vector style from MapTiler, Stadia Maps, or your own
- *   tile server, each of which needs a free/paid API key.
- * - The map instance is created once on mount and destroyed on unmount.
- *   center/zoom changes after mount call flyTo instead of re-creating the map.
- */
-
-// Builds a world-covering polygon with a rectangular hole cut out for `bounds`,
-// so a semi-transparent fill layer using this feature dims everywhere except
-// the permitted bbox.
 function buildExternalMapMask(boundsArr: Bbox): Feature<Polygon> {
   const [w, s, e, n] = boundsArr;
   return {
@@ -43,6 +24,36 @@ function buildExternalMapMask(boundsArr: Bbox): Feature<Polygon> {
   };
 }
 
+// The path being drawn: a LineString while open, a closed Polygon once finished.
+function drawGeoSelectionArea(points: Coords[], closed: boolean): Feature<LineString | Polygon> {
+  if (closed && points.length >= 3) {
+    return {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Polygon', coordinates: [[...points, points[0]]] },
+    };
+  }
+  return {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'LineString', coordinates: points },
+  };
+}
+
+// One point feature per vertex, flagged so the first one can be styled
+// differently (it's what you click to close the shape).
+function drawGeoVertices(points: Coords[]): FeatureCollection<Point> {
+  return {
+    type: 'FeatureCollection',
+    features: points.map((p, i) => ({
+      type: 'Feature',
+      properties: { isFirst: i === 0 },
+      geometry: { type: 'Point', coordinates: p },
+    })),
+  };
+}
+
+
 type MapViewerProps = {
   center?: Coords;
   zoom?: number;
@@ -51,10 +62,11 @@ type MapViewerProps = {
   lockToBounds?: boolean, // true = stay interactive, but pan/zoom-out is clamped
   boundsPadding?: number, // e.g. 0.2 = let the user pan 20% of the bbox size beyond it, dimmed
   styleSpec?: StyleSpecification; // pass a URL string to use a hosted vector style instead
-  markers?: MapMarker[];     // [{ lngLat: [lng, lat], label?: string, color?: string }]
   onMapClick?: (lngLat: LngLat) => void;
   className?: string;
-  selectionCallback: (selectionArea: Coords[]) => void;
+  enableDrawing: boolean;
+  selectionCallback?: (selectionArea: Coords[]) => void;
+  stopDrawModeCallback?: () => void;
 };
 
 
@@ -66,14 +78,41 @@ export default function MapViewer({
   lockToBounds = false, // true = stay interactive, but pan/zoom-out is clamped
   boundsPadding = 0, // e.g. 0.2 = let the user pan 20% of the bbox size beyond it, dimmed
   styleSpec = OSM_RASTER_STYLE, // pass a URL string to use a hosted vector style instead
-  markers = [],       // [{ lngLat: [lng, lat], label?: string, color?: string }]
-  onMapClick,         // (lngLat: {lng, lat}) => void
+  onMapClick = () => {},         // (lngLat: {lng, lat}) => void
   className = '',
+  enableDrawing = false,
   selectionCallback = ()=>{},
+  stopDrawModeCallback = ()=>{},
 }: MapViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapObject | null>(null);
   const markerRefs = useRef<Marker[]>([]);
+  
+  const [drawPoints, setDrawPoints] = useState<Coords[]>([]);
+  const [isDrawClosed, setIsDrawClosed] = useState(false);
+
+  const drawPointsRef = useRef<Coords[]>(drawPoints);
+  const isDrawClosedRef = useRef(isDrawClosed);
+  const enableDrawingRef = useRef(enableDrawing);
+  useEffect(() => { drawPointsRef.current = drawPoints; }, [drawPoints]);
+  useEffect(() => { isDrawClosedRef.current = isDrawClosed; }, [isDrawClosed]);
+  useEffect(() => { enableDrawingRef.current = enableDrawing; }, [enableDrawing]);
+  
+  // Turning drawing on (including re-enabling it) starts a fresh shape.
+  useEffect(() => {
+    if (enableDrawing) {
+      setDrawPoints([]);
+      setIsDrawClosed(false);
+      return;
+    }
+    if (isDrawClosedRef.current) return; // already finalized via click-to-close
+    if (drawPointsRef.current.length >= 3) {
+      setIsDrawClosed(true);
+      selectionCallback(drawPointsRef.current);
+    } else {
+      setDrawPoints([]);
+    }
+  }, [enableDrawing]);
 
   // Create the map once.
   useEffect(() => {
@@ -114,20 +153,72 @@ export default function MapViewer({
 
     if (lockToBounds && bounds) {
       const addMask = () => {
-        map.addSource('bounds-mask', { type: 'geojson', data: buildExternalMapMask(bounds) });
+        map.addSource('boundary-mask', { type: 'geojson', data: buildExternalMapMask(bounds) });
         map.addLayer({
           id: 'bounds-mask-layer',
           type: 'fill',
-          source: 'bounds-mask',
+          source: 'boundary-mask',
           paint: { 'fill-color': '#0F1417', 'fill-opacity': 0.6 },
         });
       };
       if (map.isStyleLoaded()) addMask();
       else map.once('load', addMask);
     }
+    
+    const addDrawLayers = () => {
+      map.addSource('draw-shape', { type: 'geojson', data: drawGeoSelectionArea([], false) });
+      map.addLayer({
+        id: 'draw-fill',
+        type: 'fill',
+        source: 'draw-shape',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': '#ce710d', 'fill-opacity': 0.35 },
+      });
+      map.addLayer({
+        id: 'draw-line',
+        type: 'line',
+        source: 'draw-shape',
+        paint: { 'line-color': '#ce710d', 'line-width': 2, 'line-dasharray': [2, 2] },
+      });
+
+      map.addSource('draw-vertices', { type: 'geojson', data: drawGeoVertices([]) });
+      map.addLayer({
+        id: 'draw-vertices-layer',
+        type: 'circle',
+        source: 'draw-vertices',
+        paint: {
+          'circle-radius': ['case', ['get', 'isFirst'], 8, 5],
+          'circle-color': '#ce710d',
+          'circle-stroke-color': '#0F1417',
+          'circle-stroke-width': 1.5,
+        },
+      });
+    };
+    if (map.isStyleLoaded()) addDrawLayers();
+    else map.once('load', addDrawLayers);
 
     const handleClick = (e: MapMouseEvent) => {
-      onMapClick?.(e.lngLat);
+      if (!enableDrawingRef.current) {
+        onMapClick(e.lngLat);
+        return;
+      }
+      if (isDrawClosedRef.current) return;
+
+      const currentPoints = drawPointsRef.current;
+      // Clicking back near the first vertex closes the shape.
+      if (currentPoints.length >= 3) {
+        const firstPixel = map.project(currentPoints[0]);
+        const dist = Math.hypot(e.point.x - firstPixel.x, e.point.y - firstPixel.y);
+        if (dist < 12) {
+          setIsDrawClosed(true);
+          selectionCallback(currentPoints);
+          stopDrawModeCallback();
+          return;
+        }
+      }
+
+      const newPoint: Coords = [e.lngLat.lng, e.lngLat.lat];
+      setDrawPoints((prev) => [...prev, newPoint]);
     };
     map.on('click', handleClick);
 
@@ -151,31 +242,23 @@ export default function MapViewer({
     map.flyTo({ center, zoom });
   }, [center, zoom, bounds]);
 
-  // Keep markers in sync with the `markers` prop.
+  // Push the current draw points into the map sources whenever they change.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
-    // Clear old markers.
-    markerRefs.current.forEach((m) => m.remove());
-    markerRefs.current = [];
-
-    markers.forEach(({ longLat, label, color = '#E8A63D' }) => {
-      const marker = new Marker({ color })
-        .setLngLat(longLat)
-        .addTo(map);
-      if (label) {
-        marker.setPopup(new Popup({ offset: 12 }).setText(label));
-      }
-      markerRefs.current.push(marker);
-    });
-
-    return () => {
-      markerRefs.current.forEach((m) => m.remove());
-      markerRefs.current = [];
+ 
+    const updateDrawSources = () => {
+      const shapeSource = map.getSource('draw-shape') as GeoJSONSource | undefined;
+      shapeSource?.setData(drawGeoSelectionArea(drawPoints, isDrawClosed));
+ 
+      const vertexSource = map.getSource('draw-vertices') as GeoJSONSource | undefined;
+      vertexSource?.setData(drawGeoVertices(drawPoints));
     };
-  }, [markers]);
-
+ 
+    if (map.isStyleLoaded()) updateDrawSources();
+    else map.once('load', updateDrawSources);
+  }, [drawPoints, isDrawClosed]);
+ 
   return (
     <div
       ref={containerRef}

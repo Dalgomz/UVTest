@@ -11,3 +11,7 @@
     gap: 18px;
   }
 }
+
+#dashboard-container {
+  min-width: 20%;
+}

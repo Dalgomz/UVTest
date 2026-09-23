@@ -5,10 +5,12 @@ import './App.css'
 
 function App() {
   const [kpiList, setKpiList] = useState<Kpi[]>([])
+  const [isDrawing, setIsDrawing] = useState<boolean>(false)
   const [selectionArea, setSelectionArea] = useState<Coords[]>([]);
 
   function updateSelection(newSelection: Coords[]) {
     setSelectionArea(newSelection);
+    console.log(newSelection);
   }
 
   function calcAreaSize(): number {
@@ -18,9 +20,16 @@ function App() {
   return (
     <>
       <section id="dashboard-container">
-        <button onClick={() => setKpiList((prev) => [...prev, {} as Kpi]) }>
-          Add KPI
-        </button>
+        <div>
+          <button onClick={() => setKpiList((prev) => [...prev, {} as Kpi]) }>
+            Add KPI
+          </button>
+        </div>
+        <div>
+          <button onClick={() => setIsDrawing(!isDrawing) }>
+            {isDrawing ? "Disable" : "Enable" } drawing
+          </button>
+        </div>
         <Dashboard
           kpiList={kpiList}
           areaSize={calcAreaSize()}
@@ -32,8 +41,11 @@ function App() {
           bounds={[9.194334, 45.471917, 9.218495, 45.487082]}
           boundsPadding={0.25}
           lockToBounds
+          enableDrawing={isDrawing}
           onMapClick={(longLat) => console.log(longLat)}
           selectionCallback={updateSelection}
+          stopDrawModeCallback={() => setIsDrawing(false)}
+          // Add stop drawing callback
         />
       </section>
     </>
