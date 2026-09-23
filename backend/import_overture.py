@@ -1,6 +1,8 @@
-
 import duckdb
 from pathlib import Path
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 def download_map_data(map_name, bbox):
     output_path = Path() / "map_data"
@@ -18,16 +20,17 @@ def download_map_data(map_name, bbox):
         "infrastructure": f"{BASE}/theme=base/type=infrastructure/*",
     }
 
-    with duckdb.connect(f"{output_path}/{map_name}.db") as con:
-        con.execute("INSTALL spatial")
-        con.execute("LOAD spatial")
-        con.execute("INSTALL httpfs")
-        con.execute("LOAD httpfs")
-        con.execute("SET s3_region='us-west-2'")
+    with duckdb.connect(f"{output_path}/{map_name}.db") as duck_con:
+        duck_con.execute("PRAGMA enable_progress_bar;")
+        duck_con.execute("INSTALL spatial")
+        duck_con.execute("LOAD spatial")
+        duck_con.execute("INSTALL httpfs")
+        duck_con.execute("LOAD httpfs")
+        duck_con.execute("SET s3_region='us-west-2'")
 
         for category in categories_paths:
-            print(f"Downloading {map_name}'s {category} data")
-            con.execute(f"""
+            logging.info(f"Downloading {map_name}'s {category} data")
+            duck_con.execute(f"""
                 CREATE OR REPLACE TABLE {category} AS
                 SELECT *
                 FROM read_parquet(
@@ -41,16 +44,16 @@ def download_map_data(map_name, bbox):
                     AND bbox.ymin < {north}
                     AND bbox.ymax > {south}
             """)
-            print(f"Done")
+            logging.info(f"Done")
 
-        con.close()
+        duck_con.close()
 
-    print(f"!! {map_name} Map data download completed")
+    logging.info(f" Map: {map_name} - data download completed")
     
 if __name__ == "__main__":
     # w, s, e, n
-    download_map_data("milano", (9.194334, 45.471917, 9.218495, 45.487082))
+    # download_map_data("milano", (9.194334, 45.471917, 9.218495, 45.487082))
 
     output_path = Path() / "map_data"
     with duckdb.connect(f"{Path()}/map_data/milano.db") as connection:
-        connection.sql("SELECT * FROM address LIMIT 10").show()
+        connection.sql("SELECT COUNT(*) FROM building").show()
