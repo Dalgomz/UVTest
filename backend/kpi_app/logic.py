@@ -11,6 +11,6 @@ def generate_area_kpis(polygon_coords):
     kpi_dto.add_kpi(repo.public_transport_coverage(duck_conn, polygon_coords))
     kpi_dto.add_kpi(repo.land_coverage(duck_conn, polygon_coords, kpi_dto.area_km2))
     kpi_dto.add_kpi(repo.amenities_distribution(duck_conn, polygon_coords))
-    # kpi_dto.add_kpi(repo.street_intersection_density(duck_conn, polygon_coords, kpi_dto.area_km2))
-    # kpi_dto.add_kpi(repo.health_care_avg_distance(duck_conn, polygon_coords))
+    kpi_dto.add_kpi(repo.street_intersection_density(duck_conn, polygon_coords, kpi_dto.area_km2))
+    kpi_dto.add_kpi(repo.health_care_avg_distance(duck_conn, polygon_coords))
     return kpi_dto

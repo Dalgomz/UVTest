@@ -267,23 +267,58 @@ def street_intersection_density(duck_conn: DuckDBPyConnection, polygon_coords=[]
     definition="Density of streets' road intersections per km 2"
   )
 
+  main_road_classes = ','.join(f"'{c}'" for c in [
+    "residential",
+    "tertiary",
+    "secondary",
+    "primary",
+    "service",
+  ])
+  restricted_classes = ','.join(f"'{c}'" for c in [
+    "parking_aisle",
+    "driveway",
+  ])
+
   connector_filter = gen_polygon_condition(polygon_coords, geometry_field='c.geometry')
 
   query = f"""
-    WITH road_connector_ids AS (
-      SELECT DISTINCT
-        unnest(connectors).connector_id AS connector_id
-      FROM segment
-      WHERE subtype = 'road'
+    WITH road_connector_positions AS (
+      SELECT
+        c.connector_id,
+        c.at,
+        s.id AS segment_id
+      FROM 
+        segment s, UNNEST(s.connectors) AS u(c)
+      WHERE 
+        s.subtype = 'road'
+        AND s.class IN ({main_road_classes})
+        AND (
+          s.subclass IS NULL
+          OR s.subclass NOT IN ({restricted_classes})
+        )
     ),
-
+    road_intersection_ids AS (
+      SELECT connector_id
+      FROM road_connector_positions
+      GROUP BY connector_id
+      HAVING (
+        COUNT(DISTINCT CASE WHEN "at" = 0.0 THEN segment_id END) >= 2
+        AND
+        COUNT(DISTINCT CASE WHEN "at" = 1.0 THEN segment_id END) >= 1
+      )
+      OR (
+        COUNT(DISTINCT CASE WHEN "at" = 1.0 THEN segment_id END) >= 2
+        AND
+        COUNT(DISTINCT CASE WHEN "at" = 0.0 THEN segment_id END) >= 1
+      )
+    ),
     road_intersections AS (
-      SELECT c.geometry
+      SELECT
+        c.geometry
       FROM connector c
-      INNER JOIN road_connector_ids r
+      INNER JOIN road_intersection_ids r
         ON c.id = r.connector_id
-      WHERE c.type = 'connector'
-      { "AND " + connector_filter if connector_filter is not None else "" }
+      { "WHERE " + connector_filter if connector_filter is not None else "" }
     )
 
     SELECT COUNT(*) AS intersection_count
@@ -291,7 +326,67 @@ def street_intersection_density(duck_conn: DuckDBPyConnection, polygon_coords=[]
   """
   
   try:
-    kpi_object.value = duck_conn.execute(query).fetchall()
+    crosses = duck_conn.execute(query).fetchone()
+    kpi_object.value = crosses[0] / area_km2 
+    kpi_object.band = "No band set"
+    return kpi_object
+  except:
+    raise
+
+def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], area_km2=None):
+  kpi_object = KPI(
+    key="health_care_avg_distance",
+    label="Nearest health services average distance", 
+    unit="m",
+    definition="The averge distance between residential blocks and their nearesh health service"
+  )
+
+  categories_filter = ','.join(f"'{c}'" for c in [
+    "hospital",
+    "clinic",
+    "medical_center",
+    "health_center",
+    "medical_clinic",
+    "specialist_clinic",
+    "emergency_room",
+    "urgent_care"
+  ])
+  polygon_filter = gen_polygon_condition(polygon_coords)
+  c = parse_selection_shape(polygon_coords).centroid
+  local_crs = f"+proj=aeqd +lat_0={c.y} +lon_0={c.x} +datum=WGS84 +units=m +no_defs"
+
+  query = f"""
+    WITH residential AS (
+      SELECT
+        id,
+        ST_Transform(geometry, 'OGC:CRS84', '{local_crs}') AS geometry
+      FROM building
+      WHERE
+        class = 'residential'
+        { "AND " + polygon_filter if polygon_filter is not None else "" }
+    ),
+
+    healthcare AS (
+      SELECT ST_Transform(geometry, 'OGC:CRS84', '{local_crs}') AS geometry
+      FROM place
+      WHERE categories.primary IN ({categories_filter})
+    ),
+
+    nearest_healthcare AS (
+      SELECT
+        r.id,
+        MIN(ST_Distance(r.geometry, h.geometry)) AS nearest_distance_m
+      FROM residential r
+      CROSS JOIN healthcare h
+      GROUP BY r.id
+    )
+
+    SELECT AVG(nearest_distance_m) AS average_distance_to_healthcare_m
+    FROM nearest_healthcare;
+  """
+
+  try:
+    kpi_object.value = duck_conn.execute(query).fetchone()
     kpi_object.band = "No band set"
     return kpi_object
   except:

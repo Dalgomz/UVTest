@@ -48,12 +48,20 @@ def create_place_taxonomy_mapper(db_conn):
     "engineering_services": "Professional & Business Services",
 
     # Healthcare
-    "dentist": "Healthcare",
-    "pharmacy": "Healthcare",
-    "hospital": "Healthcare",
-    "medical_center": "Healthcare",
+    "clinic": "Healthcare", 
+    "dental_clinic": "Healthcare", 
+    "dentist": "Healthcare", 
     "diagnostic_services": "Healthcare",
+    "doctors": "Healthcare", 
+    "emergency_room": "Healthcare", 
+    "health_center": "Healthcare", 
+    "hospital": "Healthcare", 
+    "medical_center": "Healthcare", 
+    "medical_clinic": "Healthcare", 
+    "pharmacy": "Healthcare",
     "physical_therapy": "Healthcare",
+    "specialist_clinic": "Healthcare", 
+    "urgent_care": "Healthcare", 
     "veterinarian": "Healthcare",
 
     # Education
