@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: urbview-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+    volumes:
+      - map_data:/app/map_data
+    # Keeps the container attached to a tty so `docker compose exec backend sh` works comfortably
+    stdin_open: true
+    tty: true
+
+volumes:
+  map_data:
