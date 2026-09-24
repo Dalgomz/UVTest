@@ -1,28 +1,56 @@
-import { useState } from 'react'
-import MapViewer from './components/MapViewer'
-import Dashboard from './components/Dashboard'
-import './App.css'
+import { useState, useEffect, use } from 'react'
+import MapViewer from '@/components/MapViewer'
+import Dashboard from '@/components/Dashboard'
+import '@/App.css'
+import api from '@/api';
+import { MAP_BBOX, MAP_PADDING } from '@/config/mapConfig'
 
 function App() {
-  const [kpiList, setKpiList] = useState<Kpi[]>([])
-  const [isDrawing, setIsDrawing] = useState<boolean>(false)
+  const [areaSize, setAreaSize] = useState<number>(0);
+  const [kpiList, setKpiList] = useState<Kpi[]>([]);
+  const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [selectionArea, setSelectionArea] = useState<Coords[]>([]);
 
   function updateSelection(newSelection: Coords[]) {
     setSelectionArea(newSelection);
-    console.log(newSelection);
+    if (isDrawing) return;
+    fetchKpis();
   }
 
-  function calcAreaSize(): number {
-    return selectionArea.length;
+  function clearSelection() {
+    setSelectionArea([]);
+    setIsDrawing(true);
+    setIsDrawing(false);
+    fetchKpis();
   }
 
+  function lockDrawing() {}
+  function unlockDrawing() {}
+
+  async function fetchKpis() {
+    lockDrawing();
+    try {
+      const response = await api.getKpi(selectionArea);
+      setAreaSize(response.area.km2);
+    } catch (e) {
+      console.error(e);
+    }
+    unlockDrawing();
+  }
+
+  useEffect(() => {}, [selectionArea, isDrawing]);
+
+  useEffect(() => { fetchKpis() }, []);
+  
   return (
     <>
       <section id="dashboard-container">
         <div>
-          <button onClick={() => setKpiList((prev) => [...prev, {} as Kpi]) }>
-            Add KPI
+          {selectionArea.map((s) => (<><div>{s[0]}<br/>{s[1]}.</div></>))}
+        </div>
+        <div>
+          <button onClick={() => clearSelection() }>
+            Clear selection
           </button>
         </div>
         <div>
@@ -32,20 +60,19 @@ function App() {
         </div>
         <Dashboard
           kpiList={kpiList}
-          areaSize={calcAreaSize()}
+          areaSize={areaSize}
         />
       </section>
       <section id="map-container">
         <MapViewer
           className="fill-container"
-          bounds={[9.194334, 45.471917, 9.218495, 45.487082]}
-          boundsPadding={0.25}
+          bounds={MAP_BBOX}
+          boundsPadding={MAP_PADDING}
           lockToBounds
           enableDrawing={isDrawing}
           onMapClick={(longLat) => console.log(longLat)}
           selectionCallback={updateSelection}
           stopDrawModeCallback={() => setIsDrawing(false)}
-          // Add stop drawing callback
         />
       </section>
     </>

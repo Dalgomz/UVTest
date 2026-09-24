@@ -209,7 +209,7 @@ export default function MapViewer({
       if (currentPoints.length >= 3) {
         const firstPixel = map.project(currentPoints[0]);
         const dist = Math.hypot(e.point.x - firstPixel.x, e.point.y - firstPixel.y);
-        if (dist < 12) {
+        if (dist < 18) {
           setIsDrawClosed(true);
           selectionCallback(currentPoints);
           stopDrawModeCallback();
@@ -229,8 +229,6 @@ export default function MapViewer({
       map.remove();
       mapRef.current = null;
     };
-    // Intentionally empty deps: style/center/zoom on first mount only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fly to new center/zoom when props change (without recreating the map).

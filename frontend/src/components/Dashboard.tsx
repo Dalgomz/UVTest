@@ -11,7 +11,7 @@ export default function Dashboard({
 } : DashboardProps) {
   return (<div className='flex flex-col'>
     <div>
-    Selection: {areaSize ?? "-"} km²
+    Selection: {areaSize?.toFixed(2) ?? "-"} km²
     </div>
     { kpiList.map((kpi) => (
       <PanelKPI key={kpi.key} kpiData={kpi}></PanelKPI>
