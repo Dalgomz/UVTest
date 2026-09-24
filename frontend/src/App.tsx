@@ -3,64 +3,65 @@ import MapViewer from '@/components/MapViewer'
 import Dashboard from '@/components/Dashboard'
 import '@/App.css'
 import api from '@/api';
+import PenIcon from '@/assets/pen.svg?react';
+
 import { MAP_BBOX, MAP_PADDING } from '@/config/mapConfig'
 
 function App() {
-  const [areaSize, setAreaSize] = useState<number>(0);
-  const [kpiList, setKpiList] = useState<Kpi[]>([]);
+  const [kpiData, setKpiData] = useState<ResponseKPI | null>(null);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
+  const [lockDrawing, setLockDrawing] = useState<boolean>(false);
   const [selectionArea, setSelectionArea] = useState<Coords[]>([]);
 
   function updateSelection(newSelection: Coords[]) {
     setSelectionArea(newSelection);
-    if (isDrawing) return;
-    fetchKpis();
   }
 
   function clearSelection() {
     setSelectionArea([]);
-    setIsDrawing(true);
     setIsDrawing(false);
-    fetchKpis();
   }
 
-  function lockDrawing() {}
-  function unlockDrawing() {}
-
   async function fetchKpis() {
-    lockDrawing();
+    setLockDrawing(true);
     try {
       const response = await api.getKpi(selectionArea);
-      setAreaSize(response.area.km2);
+      setKpiData(response);
     } catch (e) {
       console.error(e);
     }
-    unlockDrawing();
+    setLockDrawing(false);
   }
 
-  useEffect(() => {}, [selectionArea, isDrawing]);
-
   useEffect(() => { fetchKpis() }, []);
+  useEffect(() => {
+    if (isDrawing) return;
+    fetchKpis();
+  }, [isDrawing, selectionArea])
   
   return (
     <>
       <section id="dashboard-container">
-        <div>
-          {selectionArea.map((s) => (<><div>{s[0]}<br/>{s[1]}.</div></>))}
-        </div>
-        <div>
-          <button onClick={() => clearSelection() }>
+        <div style={{gap: "8px"}} className="flex button-header" >
+          <button 
+            className="col" 
+            disabled={lockDrawing || selectionArea.length === 0 && !isDrawing} 
+            onClick={clearSelection}
+          >
             Clear selection
           </button>
-        </div>
-        <div>
-          <button onClick={() => setIsDrawing(!isDrawing) }>
-            {isDrawing ? "Disable" : "Enable" } drawing
+          <button
+            className={`col ${isDrawing && 'drawing'}`}
+            disabled={lockDrawing}
+            onClick={() => setIsDrawing(!isDrawing) }
+          >
+            <PenIcon width="1rem" height="1rem" />
+            {isDrawing ? "Drawing..." : "Draw area" }
           </button>
         </div>
         <Dashboard
-          kpiList={kpiList}
-          areaSize={areaSize}
+          kpiData={kpiData}
+          loading={lockDrawing}
         />
       </section>
       <section id="map-container">
@@ -70,7 +71,6 @@ function App() {
           boundsPadding={MAP_PADDING}
           lockToBounds
           enableDrawing={isDrawing}
-          onMapClick={(longLat) => console.log(longLat)}
           selectionCallback={updateSelection}
           stopDrawModeCallback={() => setIsDrawing(false)}
         />

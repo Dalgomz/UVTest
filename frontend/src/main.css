@@ -120,8 +120,31 @@ code {
 .flex-row {
   flex-direction: row;
 }
-
+.justify-center {
+  justify-content: center;
+}
+.align-center {
+  align-items: center;
+}
 .fill-container {
   height: 100%;
   width: 100%;
 }
+.loading-opacity {
+  opacity: 50%;
+}
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* 
+#1E9DAC
+#F0E1A9
+#F6F4EE
+#EBB898
+#FF8B48*/

@@ -60,9 +60,8 @@ type MapViewerProps = {
   bounds?: Bbox;         //  — overrides center/zoom, fits the map to this bbox
   staticMap?: boolean; // true = no pan/zoom/rotate, no controls (good for a fixed-bbox render)
   lockToBounds?: boolean, // true = stay interactive, but pan/zoom-out is clamped
-  boundsPadding?: number, // e.g. 0.2 = let the user pan 20% of the bbox size beyond it, dimmed
-  styleSpec?: StyleSpecification; // pass a URL string to use a hosted vector style instead
-  onMapClick?: (lngLat: LngLat) => void;
+  boundsPadding?: number, // 0.2 = let the user pan 20% of the bbox size beyond it
+  styleSpec?: StyleSpecification;
   className?: string;
   enableDrawing: boolean;
   selectionCallback?: (selectionArea: Coords[]) => void;
@@ -78,7 +77,6 @@ export default function MapViewer({
   lockToBounds = false, // true = stay interactive, but pan/zoom-out is clamped
   boundsPadding = 0, // e.g. 0.2 = let the user pan 20% of the bbox size beyond it, dimmed
   styleSpec = OSM_RASTER_STYLE, // pass a URL string to use a hosted vector style instead
-  onMapClick = () => {},         // (lngLat: {lng, lat}) => void
   className = '',
   enableDrawing = false,
   selectionCallback = ()=>{},
@@ -158,7 +156,7 @@ export default function MapViewer({
           id: 'bounds-mask-layer',
           type: 'fill',
           source: 'boundary-mask',
-          paint: { 'fill-color': '#0F1417', 'fill-opacity': 0.6 },
+          paint: { 'fill-color': '#0F1417', 'fill-opacity': 0.36 },
         });
       };
       if (map.isStyleLoaded()) addMask();
@@ -172,13 +170,13 @@ export default function MapViewer({
         type: 'fill',
         source: 'draw-shape',
         filter: ['==', ['geometry-type'], 'Polygon'],
-        paint: { 'fill-color': '#ce710d', 'fill-opacity': 0.35 },
+        paint: { 'fill-color': '#FF8B48', 'fill-opacity': 0.35 },
       });
       map.addLayer({
         id: 'draw-line',
         type: 'line',
         source: 'draw-shape',
-        paint: { 'line-color': '#ce710d', 'line-width': 2, 'line-dasharray': [2, 2] },
+        paint: { 'line-color': '#FF8B48', 'line-width': 2, 'line-dasharray': [2, 2] },
       });
 
       map.addSource('draw-vertices', { type: 'geojson', data: drawGeoVertices([]) });
@@ -188,7 +186,7 @@ export default function MapViewer({
         source: 'draw-vertices',
         paint: {
           'circle-radius': ['case', ['get', 'isFirst'], 8, 5],
-          'circle-color': '#ce710d',
+          'circle-color': '#FF8B48',
           'circle-stroke-color': '#0F1417',
           'circle-stroke-width': 1.5,
         },
@@ -198,10 +196,6 @@ export default function MapViewer({
     else map.once('load', addDrawLayers);
 
     const handleClick = (e: MapMouseEvent) => {
-      if (!enableDrawingRef.current) {
-        onMapClick(e.lngLat);
-        return;
-      }
       if (isDrawClosedRef.current) return;
 
       const currentPoints = drawPointsRef.current;
