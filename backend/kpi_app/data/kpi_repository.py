@@ -28,8 +28,8 @@ def parse_selection_shape(polygon_coords):
 def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -> KPI:
   kpi_object = KPI(
     key="commerce_residence_ratio",
-    label="Commerce to residential rate", 
-    unit="commerces / residential building",
+    label="Commerce-to-residential ratio", 
+    unit="commercial places per residential building",
     definition="This measures the of commercial places in relation to the residential buildings in the area "
   )
 
@@ -67,7 +67,7 @@ def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -
   """
 
   try:
-    kpi_object.value = duck_conn.execute(query).fetchone()
+    kpi_object.value = duck_conn.execute(query).fetchone()[0]
     kpi_object.band = "No band set"
     return kpi_object
   except:
@@ -78,8 +78,8 @@ def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) 
   kpi_object = KPI(
     key="transport_accessibility_coverage",
     label="Public transport coverage", 
-    unit="%",
-    definition="This measures the coverage % of transport network access stepped by distance (euclidean 100m - 250m - 500m)"
+    unit=["% at 100m", "% at 250m", "% at 500m"],
+    definition="This measures the coverage % of transport network access stepped by distance"
   )
 
   polygon_shape = parse_selection_shape(polygon_coords)
@@ -117,18 +117,18 @@ def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) 
     )
 
     SELECT
-      ST_Area(ST_Intersection(s.geometry, r.buffer_100)) / ST_Area(s.geometry) * 100 AS coverage_100m,
+      ST_Area(ST_Intersection(s.geometry, r.buffer_100)) / ST_Area(s.geometry) AS coverage_100m,
 
-      ST_Area(ST_Intersection(s.geometry, r.buffer_250)) / ST_Area(s.geometry) * 100 AS coverage_250m,
+      ST_Area(ST_Intersection(s.geometry, r.buffer_250)) / ST_Area(s.geometry) AS coverage_250m,
 
-      ST_Area(ST_Intersection(s.geometry, r.buffer_500)) / ST_Area(s.geometry) * 100 AS coverage_500m
+      ST_Area(ST_Intersection(s.geometry, r.buffer_500)) / ST_Area(s.geometry) AS coverage_500m
 
     FROM radius r
     CROSS JOIN selection s;
   """
 
   try:
-    kpi_object.value = duck_conn.execute(query).fetchall()
+    kpi_object.value = duck_conn.execute(query).fetchone()
     kpi_object.band = "No band set"
     return kpi_object
   except:
@@ -138,7 +138,7 @@ def land_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[], total_area=N
   kpi_object = KPI(
     key="land_coverage",
     label="Area usage & coverage", 
-    unit="%",
+    unit=["% on Buildings", "% on Green zones", "% on Water bodies"],
     definition="This measures how much of an area is beign used by buildings, green zones, and water bodies"
   )
 
@@ -240,7 +240,7 @@ def amenities_distribution(duck_conn: DuckDBPyConnection, polygon_coords=[]):
   query = f"""
     SELECT
         t.kpi_category AS category,
-        COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () AS percentage
+        COUNT(*) / SUM(COUNT(*)) OVER () AS percentage
     FROM 
       place p
       LEFT JOIN place_category_taxonomy t
