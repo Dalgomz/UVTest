@@ -6,7 +6,7 @@ from kpi_app.data.duckdb_setup import BASE_BBOX
 
 def get_poly_area(duck_conn: DuckDBPyConnection, polygon_coords=[]):
   poly = parse_selection_shape(polygon_coords)
-  area_m2 = duck_conn.execute(f"SELECT ST_Area_Spheroid(ST_FlipCoordinates(ST_GeomFromText(?)))", [poly.wkt]).fetchone()[0]
+  area_m2 = duck_conn.execute(f"SELECT ST_Area_Spheroid(ST_GeomFromText(?))", [poly.wkt]).fetchone()[0]
   return area_m2 / 1000000
 
 def gen_polygon_condition(polygon_coords, geometry_field='geometry'):
