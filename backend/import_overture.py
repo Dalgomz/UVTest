@@ -11,13 +11,15 @@ def download_map_data(map_name, bbox):
 
     BASE = "s3://overturemaps-us-west-2/release/2026-08-19.0"
     categories_paths = {
-        "address": f"{BASE}/theme=addresses/type=address/*",
-        "place": f"{BASE}/theme=places/type=place/*",
-        "building": f"{BASE}/theme=buildings/type=building/*",
-        "land": f"{BASE}/theme=base/type=land/*",
-        "land_usage": f"{BASE}/theme=base/type=land_use/*",
-        "water": f"{BASE}/theme=base/type=water/*",
-        "infrastructure": f"{BASE}/theme=base/type=infrastructure/*",
+        "segment":   f"{BASE}/theme=transportation/type=segment/*",
+        "connector": f"{BASE}/theme=transportation/type=connector/*",
+        # "address": f"{BASE}/theme=addresses/type=address/*",
+        # "place": f"{BASE}/theme=places/type=place/*",
+        # "building": f"{BASE}/theme=buildings/type=building/*",
+        # "land": f"{BASE}/theme=base/type=land/*",
+        # "land_use": f"{BASE}/theme=base/type=land_use/*",
+        # "water": f"{BASE}/theme=base/type=water/*",
+        # "infrastructure": f"{BASE}/theme=base/type=infrastructure/*",
     }
 
     with duckdb.connect(f"{output_path}/{map_name}.db") as duck_con:
@@ -52,7 +54,7 @@ def download_map_data(map_name, bbox):
     
 if __name__ == "__main__":
     # w, s, e, n
-    # download_map_data("milano", (9.194334, 45.471917, 9.218495, 45.487082))
+    download_map_data("milano", (9.194334, 45.471917, 9.218495, 45.487082))
 
     output_path = Path() / "map_data"
     with duckdb.connect(f"{Path()}/map_data/milano.db") as connection:

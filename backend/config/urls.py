@@ -16,9 +16,9 @@ Including another URLconf
 """
 
 from django.urls import path
-from kpis import views as kpi_views
+from kpi_app import views as kpi_views
 
 urlpatterns = [
-    path("health/", kpi_views.health, name="health"),
-    path("kpi/", kpi_views.kpi_from_polygon, name="kpi_from_polygon"),
+    path("health", kpi_views.health, name="health"),
+    path("kpi", kpi_views.kpi_from_polygon, name="kpi_from_polygon"),
 ]
