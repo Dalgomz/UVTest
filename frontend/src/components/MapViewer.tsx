@@ -66,6 +66,7 @@ type MapViewerProps = {
   enableDrawing: boolean;
   selectionCallback?: (selectionArea: Coords[]) => void;
   stopDrawModeCallback?: () => void;
+  resetSignal?: number;
 };
 
 
@@ -81,6 +82,7 @@ export default function MapViewer({
   enableDrawing = false,
   selectionCallback = ()=>{},
   stopDrawModeCallback = ()=>{},
+  resetSignal = 0,
 }: MapViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapObject | null>(null);
@@ -95,6 +97,10 @@ export default function MapViewer({
   useEffect(() => { drawPointsRef.current = drawPoints; }, [drawPoints]);
   useEffect(() => { isDrawClosedRef.current = isDrawClosed; }, [isDrawClosed]);
   useEffect(() => { enableDrawingRef.current = enableDrawing; }, [enableDrawing]);
+  useEffect(() => {
+    setDrawPoints([]);
+    setIsDrawClosed(false);
+  }, [resetSignal]);
   
   // Turning drawing on (including re-enabling it) starts a fresh shape.
   useEffect(() => {
