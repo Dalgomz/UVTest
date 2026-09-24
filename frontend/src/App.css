@@ -12,19 +12,22 @@
 }
 
 #dashboard-container {
-  width: 20%;
-  max-width: 420px;
+  width: 30%;
+  max-width: 520px;
   border-right: solid 2px color-mix(in srgb, #EBB898 50%, black);
-  padding: 8px;
+  padding: 0 8px 8px 8px;
   background-color: #F6F4EE;
-  @media (max-width: 1024px) {
-  }
+  overflow: auto;
 }
 
 .button-header {
-  padding-bottom: 8px;
+  padding: 8px 0;
   margin-bottom: 8px;
   border-bottom: solid 1px #999999;
+  position: sticky;
+  top: 0px;
+  z-index: 10;
+  background-color: #F6F4EE;
 }
 
 .col {

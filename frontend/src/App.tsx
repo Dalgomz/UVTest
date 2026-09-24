@@ -8,6 +8,7 @@ import PenIcon from '@/assets/pen.svg?react';
 import { MAP_BBOX, MAP_PADDING } from '@/config/mapConfig'
 
 function App() {
+  const [resetSignal, setResetSignal] = useState<number>(0);
   const [kpiData, setKpiData] = useState<ResponseKPI | null>(null);
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [lockDrawing, setLockDrawing] = useState<boolean>(false);
@@ -20,6 +21,7 @@ function App() {
   function clearSelection() {
     setSelectionArea([]);
     setIsDrawing(false);
+    setResetSignal((resetSignal + 1) % 3);
   }
 
   async function fetchKpis() {
@@ -33,11 +35,9 @@ function App() {
     setLockDrawing(false);
   }
 
-  useEffect(() => { fetchKpis() }, []);
   useEffect(() => {
-    if (isDrawing) return;
     fetchKpis();
-  }, [isDrawing, selectionArea])
+  }, [selectionArea])
   
   return (
     <>
@@ -59,10 +59,12 @@ function App() {
             {isDrawing ? "Drawing..." : "Draw area" }
           </button>
         </div>
-        <Dashboard
-          kpiData={kpiData}
-          loading={lockDrawing}
-        />
+        <div style={{flexGrow: 1}}>
+          <Dashboard
+            kpiData={kpiData}
+            loading={lockDrawing}
+          />
+        </div>
       </section>
       <section id="map-container">
         <MapViewer
@@ -73,6 +75,7 @@ function App() {
           enableDrawing={isDrawing}
           selectionCallback={updateSelection}
           stopDrawModeCallback={() => setIsDrawing(false)}
+          resetSignal={resetSignal}
         />
       </section>
     </>

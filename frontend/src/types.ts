@@ -1,8 +1,8 @@
 type Kpi = {
   key: string;
   label: string;
-  value: number;
-  unit: string;
+  value: number | number[];
+  unit: string | string[];
   band: string;
   definition: string;
 }

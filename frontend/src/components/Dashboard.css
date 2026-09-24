@@ -1,0 +1,49 @@
+.selection-label {
+  border-radius: 8px;
+  border: solid 1px #999999;
+  font-weight: 500;
+  padding: 2px;
+}
+
+.kpi-panel {
+  text-align: left;
+  border-radius: 8px;
+  border: solid 1px #999999;
+  padding: 4px 8px;
+  line-height: normal;
+}
+
+.panel-label {
+  font-size: medium;
+  font-weight: 500;
+  color: #804524;
+}
+.panel-band {
+  font-size: small;
+  line-height: normal;
+  font-weight: 700;
+}
+.panel-def {
+  font-size: small;
+  line-height: normal;
+}
+.panel-value {
+  font-size: large;
+  line-height: normal;
+  font-weight: 500;
+}
+.panel-uom {
+  font-size: small;
+  line-height: normal;
+  font-weight: 500;
+}
+.panel-small-value {
+  font-size: medium;
+  line-height: normal;
+  font-weight: 500;
+}
+.panel-uom-small {
+  font-size: small;
+  line-height: normal;
+  font-weight: 400;
+}
