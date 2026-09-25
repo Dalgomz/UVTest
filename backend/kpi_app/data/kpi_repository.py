@@ -32,6 +32,17 @@ def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -
     unit="commercial places per residential building",
     definition="This measures the of commercial places in relation to the residential buildings in the area "
   )
+  
+  def thresholds(value):
+    if value < 0.1:
+      return "Typical of sparse areas"
+    if value < 0.25:
+      return "Typical of residential zones"
+    if value < 0.5:
+      return "Typical of urban areas"
+    if value < 1:
+      return "Typical of central"
+    return "Typical of commercial heavy zones"
 
   commerce_categories = ','.join(f"'{c}'" for c in [
     'Food & Drinks', 
@@ -70,7 +81,7 @@ def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -
 
   try:
     kpi_object.value = duck_conn.execute(query).fetchone()[0]
-    kpi_object.band = "Typical of central/commercial zones"
+    kpi_object.band = thresholds(kpi_object.value)
     return kpi_object
   except:
     raise
@@ -82,6 +93,14 @@ def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) 
     unit=["% at 100m", "% at 250m", "% at 500m"],
     definition="This measures the coverage % of transport network access stepped by distance"
   )
+  def thresholds(value):
+    if value < 0.20:
+        return "Poor coverage"
+    if value < 0.50:
+        return "Low coverage"
+    if value < 0.80:
+        return "Good/ideal coverage"
+    return "Very high coverage"
 
   polygon_shape = parse_selection_shape(polygon_coords)
   c = polygon_shape.centroid
@@ -130,7 +149,7 @@ def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) 
 
   try:
     kpi_object.value = duck_conn.execute(query).fetchone()
-    kpi_object.band = "Low coverage"
+    kpi_object.band = thresholds(kpi_object.value[2] or 0)
     return kpi_object
   except:
     raise
@@ -142,6 +161,14 @@ def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], a
     unit="m",
     definition="The averge distance between residential blocks and their nearesh health service"
   )
+  def thresholds(value):
+    if value < 250:
+      return "Good coverage"
+    if value < 500:
+      return "Ideal coverage"
+    if value < 1000:
+      return "Minimal recommended coverage"
+    return "Poor coverage"
 
   categories_filter = ','.join(f"'{c}'" for c in [
     "hospital",
@@ -189,7 +216,7 @@ def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], a
 
   try:
     kpi_object.value = duck_conn.execute(query).fetchone()[0]
-    kpi_object.band = "Good coverage"
+    kpi_object.band = thresholds(kpi_object.value)
     return kpi_object
   except:
     raise
@@ -201,6 +228,24 @@ def land_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[], total_area=N
     unit=["% on Buildings", "% on Green zones", "% on Water bodies"],
     definition="This measures how much of an area is beign used by buildings, green zones, and water bodies"
   )
+  def build_thresholds(value):
+    if value < 0.2:
+      return "Low building"
+    if value < 0.4:
+      return "Moderate building"
+    if value < 0.7:
+      return "Dense building"
+    return "Compact building"
+  def greens_thresholds(value):
+    if value < 0.05:
+      return "Very low greens"
+    if value < 0.13:
+      return "Low greens"
+    if value < 0.20:
+      return "Moderate greens"
+    if value < 0.30:
+      return "High greens"
+    return "Very high greens"
 
   land_categories = ','.join(f"'{c}'" for c in [
     "park",
@@ -282,7 +327,7 @@ def land_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[], total_area=N
   try:
     area_data = duck_conn.execute(query).fetchone()
     kpi_object.value = [a/total_area for a in area_data]
-    kpi_object.band = "High Building - Moderate greens density"
+    kpi_object.band = f"{build_thresholds(kpi_object.value[0])} - {greens_thresholds(kpi_object.value[1])} density"
     return kpi_object
   except:
     raise
@@ -294,7 +339,14 @@ def amenities_distribution(duck_conn: DuckDBPyConnection, polygon_coords=[]):
     unit="%",
     definition="This measures the amenities distribution in percentages of the area"
   )
-
+  def thresholds(amenity_list):
+    for value in amenity_list:
+      if value[0] == "Professional & Business Services" and value[1] > 0.15:
+        return "Administrative zone"
+      if value[0] in ["Culture & Entertainment", "Accommodation"] and value[1] > 0.125:
+        return "Touristic zone"
+    return "Balanced area"
+    
   polygon_filter = gen_polygon_condition(polygon_coords)
 
   query = f"""
@@ -314,7 +366,7 @@ def amenities_distribution(duck_conn: DuckDBPyConnection, polygon_coords=[]):
   
   try:
     kpi_object.value = duck_conn.execute(query).fetchall()
-    kpi_object.band = "Administrative zone"
+    kpi_object.band = thresholds(kpi_object.value)
     return kpi_object
   except:
     raise
@@ -326,6 +378,14 @@ def street_intersection_density(duck_conn: DuckDBPyConnection, polygon_coords=[]
     unit="/km2",
     definition="Density of streets' road intersections per km 2"
   )
+  def thresholds(value):
+    if value < 50:
+        return "Low density"
+    if value < 100:
+        return "Moderate density"
+    if value < 200:
+        return "High density"
+    return "Very high density"
 
   main_road_classes = ','.join(f"'{c}'" for c in [
     "residential",
@@ -388,7 +448,7 @@ def street_intersection_density(duck_conn: DuckDBPyConnection, polygon_coords=[]
   try:
     crosses = duck_conn.execute(query).fetchone()
     kpi_object.value = crosses[0] / area_km2 
-    kpi_object.band = "High density"
+    kpi_object.band = thresholds(kpi_object.value)
     return kpi_object
   except:
     raise

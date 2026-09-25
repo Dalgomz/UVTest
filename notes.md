@@ -12,8 +12,8 @@
 |-|-|
 | measures | The ratio of commercial places to residential buildings within the same area |
 | computed by | Computed as: $$\frac{\sum commerce~places}{\sum residential~buildings}$$ |
-| thresholds | 0.1 - typical of sparse areas - 0.25 - typical of residential zones 0.5 - typical of urban areas - 1.0 - typical of central/commercial zones |
-| Where they came from | Based on a 2019 Applied Energy paper by Hachem & Grewal, for a the reference value of 0.25 adjusted by the data observed in Milan, as it seemed like a lower bound |
+| thresholds |  typical of sparse areas -0.1 - typical of residential zones - 0.25 - typical of urban areas - 0.5 -typical of central zone - 1.0 - typical of commercial heavy zones |
+| Where they came from | Reference value of 0.25 based on a 2019 Applied Energy paper by Hachem & Grewal, for a the adjusted by the data observed in Milan, as it seemed like a proper bound |
 --------------
 
 | Average healthcare distance ||
@@ -29,7 +29,7 @@
 | measures | The percentage of area occupied by buildings, green zones, and water bodies |
 | computed by | Measuring the area occupied by buildings, green zones, parks, and water bodies relative to the total area |
 | thresholds | |
-| Building coverage | low - 20% - moderate - 40% - high/compact - 70% |
+| Building coverage | low - 20% - moderate - 40% - high - 70% - compact |
 | Greens and Water coverage | very low - 5% - low - 13% - moderate - 20% - high – 30% - very high  |
 | Where they came from | References from studies and datasets concerning urban land use and green infrastructure in the EU, including the EEA, the values are hand fitted |
 --------------
