@@ -73,7 +73,6 @@ def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -
   except:
     raise
 
-
 def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) -> KPI:
   kpi_object = KPI(
     key="transport_accessibility_coverage",
@@ -133,7 +132,67 @@ def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) 
     return kpi_object
   except:
     raise
-  
+
+
+def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], area_km2=None):
+  kpi_object = KPI(
+    key="health_care_avg_distance",
+    label="Nearest health services average distance", 
+    unit="m",
+    definition="The averge distance between residential blocks and their nearesh health service"
+  )
+
+  categories_filter = ','.join(f"'{c}'" for c in [
+    "hospital",
+    "clinic",
+    "medical_center",
+    "health_center",
+    "medical_clinic",
+    "specialist_clinic",
+    "emergency_room",
+    "urgent_care"
+  ])
+  polygon_filter = gen_polygon_condition(polygon_coords)
+  c = parse_selection_shape(polygon_coords).centroid
+  local_crs = f"+proj=aeqd +lat_0={c.y} +lon_0={c.x} +datum=WGS84 +units=m +no_defs"
+
+  query = f"""
+    WITH residential AS (
+      SELECT
+        id,
+        ST_Transform(geometry, 'OGC:CRS84', '{local_crs}') AS geometry
+      FROM building
+      WHERE
+        subtype = 'residential'
+        { "AND " + polygon_filter if polygon_filter is not None else "" }
+    ),
+
+    healthcare AS (
+      SELECT ST_Transform(geometry, 'OGC:CRS84', '{local_crs}') AS geometry
+      FROM place
+      WHERE categories.primary IN ({categories_filter})
+    ),
+
+    nearest_healthcare AS (
+      SELECT
+        r.id,
+        MIN(ST_Distance(r.geometry, h.geometry)) AS nearest_distance_m
+      FROM residential r
+      CROSS JOIN healthcare h
+      GROUP BY r.id
+    )
+
+    SELECT AVG(nearest_distance_m) AS average_distance_to_healthcare_m
+    FROM nearest_healthcare;
+  """
+
+  try:
+    kpi_object.value = duck_conn.execute(query).fetchone()[0]
+    kpi_object.band = "No band set"
+    return kpi_object
+  except:
+    raise
+
 def land_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[], total_area=None):
   kpi_object = KPI(
     key="land_coverage",
@@ -328,65 +387,6 @@ def street_intersection_density(duck_conn: DuckDBPyConnection, polygon_coords=[]
   try:
     crosses = duck_conn.execute(query).fetchone()
     kpi_object.value = crosses[0] / area_km2 
-    kpi_object.band = "No band set"
-    return kpi_object
-  except:
-    raise
-
-def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], area_km2=None):
-  kpi_object = KPI(
-    key="health_care_avg_distance",
-    label="Nearest health services average distance", 
-    unit="m",
-    definition="The averge distance between residential blocks and their nearesh health service"
-  )
-
-  categories_filter = ','.join(f"'{c}'" for c in [
-    "hospital",
-    "clinic",
-    "medical_center",
-    "health_center",
-    "medical_clinic",
-    "specialist_clinic",
-    "emergency_room",
-    "urgent_care"
-  ])
-  polygon_filter = gen_polygon_condition(polygon_coords)
-  c = parse_selection_shape(polygon_coords).centroid
-  local_crs = f"+proj=aeqd +lat_0={c.y} +lon_0={c.x} +datum=WGS84 +units=m +no_defs"
-
-  query = f"""
-    WITH residential AS (
-      SELECT
-        id,
-        ST_Transform(geometry, 'OGC:CRS84', '{local_crs}') AS geometry
-      FROM building
-      WHERE
-        class = 'residential'
-        { "AND " + polygon_filter if polygon_filter is not None else "" }
-    ),
-
-    healthcare AS (
-      SELECT ST_Transform(geometry, 'OGC:CRS84', '{local_crs}') AS geometry
-      FROM place
-      WHERE categories.primary IN ({categories_filter})
-    ),
-
-    nearest_healthcare AS (
-      SELECT
-        r.id,
-        MIN(ST_Distance(r.geometry, h.geometry)) AS nearest_distance_m
-      FROM residential r
-      CROSS JOIN healthcare h
-      GROUP BY r.id
-    )
-
-    SELECT AVG(nearest_distance_m) AS average_distance_to_healthcare_m
-    FROM nearest_healthcare;
-  """
-
-  try:
-    kpi_object.value = duck_conn.execute(query).fetchone()
     kpi_object.band = "No band set"
     return kpi_object
   except:

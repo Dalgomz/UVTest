@@ -7,9 +7,19 @@ export default function PanelKPI({ kpiData }: PanelKPIProps) {
   function formatValueUnits(value: number, index: number, unit: string|string[]): string {
     const target = Array.isArray(unit) ? unit[index] : unit;
     const displayValue = target.includes('%') ? value * 100 : value;
-    return displayValue.toFixed(1);
+    return displayValue?.toFixed(1);
   } 
 
+  if (kpiData.value === null || (Array.isArray(kpiData.value) && kpiData.value.length === 0)) {
+    return (<div className="kpi-panel">
+      <div className="panel-label">{kpiData.label}</div>
+      <div className="panel-band">{'> '} Unknown </div>
+      <p className="panel-def">- {kpiData.definition}</p>
+      <div>
+        <span className="panel-value"> No data found for this KPI </span>
+      </div>
+    </div>)
+  }
   return (<div className="kpi-panel">
     <div className="panel-label">{kpiData.label}</div>
     <div className="panel-band">{'> '}{kpiData.band}</div>
