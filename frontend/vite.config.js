@@ -6,6 +6,10 @@ import { defineConfig } from 'vite';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), svgr()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/testSetup.ts'],
+  },
   optimizeDeps: {
     exclude: ['maplibre-gl'],
   },
