@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 import os
+import json
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,7 +28,10 @@ SECRET_KEY = "django-insecure-wvh!k5u8&f5uh%r@=mg11kr80y^ewu*!m==ibob3)$gamcqka4
 DEBUG = os.environ.get("DEBUG", "1") == "1"
 
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-
+raw_bbox = os.environ.get("BASE_BBOX", "[9.194334, 45.471917, 9.218495, 45.487082]")
+BASE_BBOX = json.loads(raw_bbox)
+MAP_NAME = os.environ.get("MAP_NAME", "milano")
+DB_FOLDER = os.environ.get("DB_FOLDER", 'map_data')
 
 # Application definition
 

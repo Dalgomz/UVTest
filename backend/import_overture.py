@@ -2,10 +2,12 @@ import duckdb
 from pathlib import Path
 import logging
 
+from config import settings
 logging.basicConfig(level=logging.INFO)
 
 def download_map_data(map_name, bbox):
-    output_path = Path() / "map_data"
+    data_folder = settings.DB_FOLDER or "map_data"
+    output_path = Path.cwd() / data_folder
     output_path.mkdir(parents=True, exist_ok=True)
     west, south, east, north = bbox
 
@@ -13,13 +15,13 @@ def download_map_data(map_name, bbox):
     categories_paths = {
         "segment":   f"{BASE}/theme=transportation/type=segment/*",
         "connector": f"{BASE}/theme=transportation/type=connector/*",
-        # "address": f"{BASE}/theme=addresses/type=address/*",
-        # "place": f"{BASE}/theme=places/type=place/*",
-        # "building": f"{BASE}/theme=buildings/type=building/*",
-        # "land": f"{BASE}/theme=base/type=land/*",
-        # "land_use": f"{BASE}/theme=base/type=land_use/*",
-        # "water": f"{BASE}/theme=base/type=water/*",
-        # "infrastructure": f"{BASE}/theme=base/type=infrastructure/*",
+        "address": f"{BASE}/theme=addresses/type=address/*",
+        "place": f"{BASE}/theme=places/type=place/*",
+        "building": f"{BASE}/theme=buildings/type=building/*",
+        "land": f"{BASE}/theme=base/type=land/*",
+        "land_use": f"{BASE}/theme=base/type=land_use/*",
+        "water": f"{BASE}/theme=base/type=water/*",
+        "infrastructure": f"{BASE}/theme=base/type=infrastructure/*",
     }
 
     with duckdb.connect(f"{output_path}/{map_name}.db") as duck_con:
@@ -53,9 +55,7 @@ def download_map_data(map_name, bbox):
     logging.info(f" Map: {map_name} - data download completed")
     
 if __name__ == "__main__":
+    map_name = settings.MAP_NAME or 'milano'
+    map_bbox = settings.BASE_BBOX or (9.194334, 45.471917, 9.218495, 45.487082)
     # w, s, e, n
-    download_map_data("milano", (9.194334, 45.471917, 9.218495, 45.487082))
-
-    output_path = Path() / "map_data"
-    with duckdb.connect(f"{Path()}/map_data/milano.db") as connection:
-        connection.sql("SELECT COUNT(*) FROM building").show()
+    download_map_data(map_name, map_bbox)

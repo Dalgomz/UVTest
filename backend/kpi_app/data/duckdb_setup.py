@@ -4,7 +4,6 @@ from pathlib import Path
 import duckdb
 from config import settings 
 
-# Add to ENV ->
 OVERTURE_CATEGORIES = [
   "address",
   "place",
@@ -14,10 +13,9 @@ OVERTURE_CATEGORIES = [
   "water",
   "infrastructure",
 ]
-BASE_BBOX = [9.194334, 45.471917, 9.218495, 45.487082]
-MAP_NAME = 'milano'
-DB_FOLDER = 'map_data'
-# <- END OF Add to ENV
+BASE_BBOX = settings.BASE_BBOX
+MAP_NAME = settings.MAP_NAME
+DB_FOLDER = settings.DB_FOLDER
 
 @contextmanager
 def get_db_connection():
@@ -26,7 +24,6 @@ def get_db_connection():
   duck_connection = duckdb.connect(f"{output_path}/{MAP_NAME}.db")
 
   try:
-    # duck_connection.execute("INSTALL spatial;")
     duck_connection.execute("LOAD spatial;")
     yield duck_connection
 
