@@ -70,7 +70,7 @@ def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -
 
   try:
     kpi_object.value = duck_conn.execute(query).fetchone()[0]
-    kpi_object.band = "No band set"
+    kpi_object.band = "Typical of central/commercial zones"
     return kpi_object
   except:
     raise
@@ -130,11 +130,10 @@ def public_transport_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[]) 
 
   try:
     kpi_object.value = duck_conn.execute(query).fetchone()
-    kpi_object.band = "No band set"
+    kpi_object.band = "Low coverage"
     return kpi_object
   except:
     raise
-
 
 def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], area_km2=None):
   kpi_object = KPI(
@@ -190,7 +189,7 @@ def health_care_avg_distance(duck_conn: DuckDBPyConnection, polygon_coords=[], a
 
   try:
     kpi_object.value = duck_conn.execute(query).fetchone()[0]
-    kpi_object.band = "No band set"
+    kpi_object.band = "Good coverage"
     return kpi_object
   except:
     raise
@@ -283,7 +282,7 @@ def land_coverage(duck_conn: DuckDBPyConnection, polygon_coords=[], total_area=N
   try:
     area_data = duck_conn.execute(query).fetchone()
     kpi_object.value = [a/total_area for a in area_data]
-    kpi_object.band = "No band set"
+    kpi_object.band = "High Building - Moderate greens density"
     return kpi_object
   except:
     raise
@@ -315,7 +314,7 @@ def amenities_distribution(duck_conn: DuckDBPyConnection, polygon_coords=[]):
   
   try:
     kpi_object.value = duck_conn.execute(query).fetchall()
-    kpi_object.band = "No band set"
+    kpi_object.band = "Administrative zone"
     return kpi_object
   except:
     raise
@@ -389,7 +388,7 @@ def street_intersection_density(duck_conn: DuckDBPyConnection, polygon_coords=[]
   try:
     crosses = duck_conn.execute(query).fetchone()
     kpi_object.value = crosses[0] / area_km2 
-    kpi_object.band = "No band set"
+    kpi_object.band = "High density"
     return kpi_object
   except:
     raise
