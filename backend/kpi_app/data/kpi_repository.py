@@ -58,7 +58,9 @@ def commerce_residence_ratio(duck_conn: DuckDBPyConnection, polygon_coords=[]) -
     residential AS (
       SELECT COUNT(*) AS residential_count
       FROM building
-      { "WHERE "+ polygon_filter if polygon_filter is not None else "" }
+      WHERE
+        subtype = 'residential'
+      { "AND "+ polygon_filter if polygon_filter is not None else "" }
     )
 
     SELECT

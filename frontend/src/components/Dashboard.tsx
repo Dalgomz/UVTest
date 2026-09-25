@@ -16,7 +16,7 @@ export default function Dashboard({
 
   useEffect(() => {}, [kpiData])
   return (<>
-    <div style={{position: "relative", overflow: "auto"}} className='flex flex-col'>
+    <div style={{position: "relative", minHeight: "50%", overflow: "auto"}} className='flex flex-col'>
       { loading && 
         <div
           style={{height: "100%", width: "100%", opacity: "70%", backgroundColor:"#F6F4EE", position: "absolute" }}
